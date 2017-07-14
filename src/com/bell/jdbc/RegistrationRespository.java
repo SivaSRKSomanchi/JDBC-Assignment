@@ -15,6 +15,7 @@ public class RegistrationRespository {
 	private static final String CREATE_QUERY = "create table register(name character varying(40) NOT NULL, password character varying(40) NOT NULL, gender character varying(40) NOT NULL, age character varying(40) NOT NULL, email character varying(40) NOT NULL)";
 	private static final String INSERT_QUERY = "INSERT INTO register (name, password, gender, age, email) values(?,?,?,?,?)";
 	private static final String SELECT_ALL_QUERY = "SELECT * FROM register";
+	private static final String UPDATE_QUERY = "UPDATE register SET password = ? WHERE name = ? AND email = ?";
 	private Connection con = null;
 
 	private void getConnection() {
@@ -98,38 +99,78 @@ public class RegistrationRespository {
 
 	public void selectCustInfo() throws PSQLException {
 		Statement s = null;
-//		Scanner scanner = new Scanner(System.in);
 		System.out
 				.println("Connecting to PostgreSQL DB to perform SELECTION Operation.");
 		getConnection();
-//		System.out.println("Do you want view all records. Say YES/NO?");
-//		String sp = scanner.next();
-//		if (sp.equalsIgnoreCase("yes")) {
-			try {
-				s = con.createStatement();
-				ResultSet rs = s.executeQuery(SELECT_ALL_QUERY);
-				System.out.println("Retrieving Information..");
-				while (rs.next()) {
-					String name = rs.getString(1);
-					String password = rs.getString(2);
-					String gender = rs.getString(3);
-					int age = rs.getInt(4);
-					String email = rs.getString(5);
-					System.out.println("=========CUSTOMER DETAILS=========");
-					CustInfo info = new CustInfo(name, password, gender, age,
-							email);
-					System.out.println(info.toString());
-				}
-				System.out.println("SELECTION OPERARION SUCCESSFULL. Thank U!");
+		try {
+			s = con.createStatement();
+			ResultSet rs = s.executeQuery(SELECT_ALL_QUERY);
+			System.out.println("Retrieving Information..");
+			System.out.println("=========CUSTOMER DETAILS=========");
+			while (rs.next()) {
+				String name = rs.getString(1);
+				String password = rs.getString(2);
+				String gender = rs.getString(3);
+				int age = rs.getInt(4);
+				String email = rs.getString(5);
 
-			} catch (SQLException e) {
-				System.out.println(e);
+				CustInfo info = new CustInfo(name, password, gender, age, email);
+				System.out.println(info.toString());
 			}
-//		}else{
-//			System.out.println("Enter following details to view your perspective details.");
-//			
-//		}
+			System.out.println("SELECTION OPERARION SUCCESSFULL. Thank U!");
 
+		} catch (SQLException e) {
+			System.out.println(e);
+		}
 	}
 
+	public void updateRegister(String name, String password, String email)
+			throws SQLException {
+		PreparedStatement ps = null;
+		System.out
+				.println("Connecting to PostgreSQL DB to perform UPDATE Operation.");
+		getConnection();
+		System.out
+				.println("Updating Password corresponding to give Name and Email id.");
+		try {
+			ps = con.prepareStatement(UPDATE_QUERY);
+			ps.setString(2, name);
+			ps.setString(1, password);
+			ps.setString(3, email);
+			ps.executeUpdate();
+			ps.close();
+		} catch (SQLException se) {
+			throw se;
+		}
+	}
+
+	public void selectNameandEmail(String name, String email) {
+		PreparedStatement ps = null;
+		System.out
+				.println("Connecting to PostgreSQL DB to perform SELECTION Operation.");
+		getConnection();
+		try {
+			ps = con.prepareStatement("SELECT * FROM register WHERE name = ? AND email = ?");
+			ps.setString(1, name);
+			ps.setString(2, email);
+			ResultSet rs = ps.executeQuery();
+			System.out.println("Retrieving Information..");
+			System.out.println("=========CUSTOMER DETAILS=========");
+			System.out.println("\n **Update Record**");
+			while (rs.next()) {
+				String name1 = rs.getString(1);
+				String password = rs.getString(2);
+				String gender = rs.getString(3);
+				int age = rs.getInt(4);
+				String email1 = rs.getString(5);
+				
+				CustInfo info = new CustInfo(name1, password, gender, age, email1);
+				System.out.println(info.toString());
+
+			}
+
+		} catch (SQLException e) {
+			System.out.println("Retrieval Problem.. "+ e);
+		}
+	}
 }
