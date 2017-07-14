@@ -1,6 +1,7 @@
 package com.bell.jdbc;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -16,6 +17,7 @@ public class RegistrationRespository {
 	private static final String INSERT_QUERY = "INSERT INTO register (name, password, gender, age, email) values(?,?,?,?,?)";
 	private static final String SELECT_ALL_QUERY = "SELECT * FROM register";
 	private static final String UPDATE_QUERY = "UPDATE register SET password = ? WHERE name = ? AND email = ?";
+	private static final String DELETE_QUERY = "delete from register where age=? not in (select min() from   register group  by name=?, email=? ) ";
 	private Connection con = null;
 
 	private void getConnection() {
@@ -47,11 +49,14 @@ public class RegistrationRespository {
 		getConnection();
 		try {
 			st = con.createStatement();
-			boolean istableexist = st
-					.execute("SELECT EXISTS (SELECT 1 FROM pg_tables where schemaname='public' AND tablename='register1')");
-			if (!istableexist) {
+			DatabaseMetaData dbm = con.getMetaData();
+			// check if "register" table is there
+			ResultSet tables = dbm.getTables(null, null, "register", null);
+			if (tables.next()) {
+				// Table exists
 				System.out.println("Table already created...skiping it");
 			} else {
+				// Table does not exist
 				ps = con.prepareStatement(CREATE_QUERY);
 				result = ps.execute();
 				System.out.println("Successfully created");
@@ -163,14 +168,48 @@ public class RegistrationRespository {
 				String gender = rs.getString(3);
 				int age = rs.getInt(4);
 				String email1 = rs.getString(5);
-				
-				CustInfo info = new CustInfo(name1, password, gender, age, email1);
+
+				CustInfo info = new CustInfo(name1, password, gender, age,
+						email1);
 				System.out.println(info.toString());
 
 			}
 
 		} catch (SQLException e) {
-			System.out.println("Retrieval Problem.. "+ e);
+			System.out.println("Retrieval Problem.. " + e);
+		}
+	}
+
+	public void deleteRecord(String name, String email) {
+		// TODO Auto-generated method stub
+		PreparedStatement ps = null;
+		System.out
+				.println("Connecting to PostgreSQL DB to perform SELECTION Operation.");
+		getConnection();
+		try {
+			ps = con.prepareStatement(DELETE_QUERY);
+			ps.setString(1, name);
+			ps.setString(2, email);
+			ResultSet rs = ps.executeQuery();
+			System.out.println("Retrieving Information..");
+			System.out.println("=========DELETED CUSTOMER DETAILS=========");
+
+			while (rs.next()) {
+				String name1 = rs.getString(1);
+				String password = rs.getString(2);
+				String gender = rs.getString(3);
+				int age = rs.getInt(4);
+				String email1 = rs.getString(5);
+
+				CustInfo info = new CustInfo(name1, password, gender, age,
+						email1);
+				System.out.println(info.toString());
+
+			}
+			System.out.println("\n**Deleted Record**");
+
+		} catch (SQLException e) {
+			System.out.println("Retrieval Problem.. " + e);
 		}
 	}
 }
