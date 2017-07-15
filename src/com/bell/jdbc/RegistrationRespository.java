@@ -17,7 +17,9 @@ public class RegistrationRespository {
 	private static final String INSERT_QUERY = "INSERT INTO register (name, password, gender, age, email) values(?,?,?,?,?)";
 	private static final String SELECT_ALL_QUERY = "SELECT * FROM register";
 	private static final String UPDATE_QUERY = "UPDATE register SET password = ? WHERE name = ? AND email = ?";
-	private static final String DELETE_QUERY = "delete from register where age=? not in (select min() from   register group  by name=?, email=? ) ";
+	private static final String DELETE_QUERY = "delete from register where exists (select 1 from register duplicateregister where duplicateregister.name = register.name and duplicateregister.email = register.email)";
+	private static String DELETE_SINGLE_RECORD_QUERY = "";
+
 	private Connection con = null;
 
 	private void getConnection() {
@@ -149,7 +151,8 @@ public class RegistrationRespository {
 		}
 	}
 
-	public void selectNameandEmail(String name, String email) {
+	public boolean selectNameandEmail(String name, String email) {
+		boolean result = false;
 		PreparedStatement ps = null;
 		System.out
 				.println("Connecting to PostgreSQL DB to perform SELECTION Operation.");
@@ -163,6 +166,7 @@ public class RegistrationRespository {
 			System.out.println("=========CUSTOMER DETAILS=========");
 			System.out.println("\n **Update Record**");
 			while (rs.next()) {
+				result = true;
 				String name1 = rs.getString(1);
 				String password = rs.getString(2);
 				String gender = rs.getString(3);
@@ -178,9 +182,10 @@ public class RegistrationRespository {
 		} catch (SQLException e) {
 			System.out.println("Retrieval Problem.. " + e);
 		}
+		return result;
 	}
 
-	public void deleteRecord(String name, String email) {
+	public void deleteDUPICATERecord() {
 		// TODO Auto-generated method stub
 		PreparedStatement ps = null;
 		System.out
@@ -188,28 +193,77 @@ public class RegistrationRespository {
 		getConnection();
 		try {
 			ps = con.prepareStatement(DELETE_QUERY);
-			ps.setString(1, name);
-			ps.setString(2, email);
-			ResultSet rs = ps.executeQuery();
-			System.out.println("Retrieving Information..");
-			System.out.println("=========DELETED CUSTOMER DETAILS=========");
-
-			while (rs.next()) {
-				String name1 = rs.getString(1);
-				String password = rs.getString(2);
-				String gender = rs.getString(3);
-				int age = rs.getInt(4);
-				String email1 = rs.getString(5);
-
-				CustInfo info = new CustInfo(name1, password, gender, age,
-						email1);
-				System.out.println(info.toString());
-
+			int rs = ps.executeUpdate();
+			if (rs > 0) {
+				System.out
+						.println("=========DELETED DUPLICATE RECORD=========");
 			}
-			System.out.println("\n**Deleted Record**");
-
 		} catch (SQLException e) {
 			System.out.println("Retrieval Problem.. " + e);
 		}
+	}
+
+	public void deleteRecord() {
+		Scanner scanner = new Scanner(System.in);
+		System.out.println("Enter the query: ");
+		DELETE_SINGLE_RECORD_QUERY = scanner.nextLine();
+		PreparedStatement ps = null;
+		System.out
+				.println("Connecting to PostgreSQL DB to perform SELECTION Operation.");
+		getConnection();
+		try {
+			ps = con.prepareStatement(DELETE_SINGLE_RECORD_QUERY);
+			int rs = ps.executeUpdate();
+			if (rs > 0) {
+				System.out.println("=========DELETED Specific RECORD=========");
+			}
+		} catch (SQLException e) {
+			System.out.println("Retrieval Problem.. " + e);
+		}
+		scanner.close();
+	}
+
+	public boolean successfullLogin(String name, String password) {
+		// TODO Auto-generated method stub
+		boolean result = false;
+		PreparedStatement ps = null;
+		System.out
+				.println("Connecting to PostgreSQL DB to perform SELECTION Operation.");
+		getConnection();
+		try {
+			ps = con.prepareStatement("SELECT FROM register WHERE name=? AND email=?");
+			ps.setString(1, name);
+			ps.setString(2, password);
+			int rs = ps.executeUpdate();
+			if (rs > 0) {
+				result = true;
+			}
+		} catch (SQLException e) {
+			System.out.println(e);
+		}
+
+		return result;
+	}
+
+
+	public boolean deleteAccount(String name, String email) {
+		boolean result = false;
+		PreparedStatement ps = null;
+		System.out
+				.println("Connecting to PostgreSQL DB to perform SELECTION Operation.");
+		getConnection();
+		try {
+			ps = con.prepareStatement("DELETE FROM register WHERE name=? AND email=?");
+			ps.setString(1, name);
+			ps.setString(2, email);
+			int rs = ps.executeUpdate();
+			if (rs > 0) {
+				result = true;
+			}
+		} catch (SQLException e) {
+			System.out.println(e);
+		}
+
+		return result;
 	}
 }
